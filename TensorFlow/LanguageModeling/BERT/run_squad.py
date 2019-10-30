@@ -204,7 +204,8 @@ def get_frozen_tftrt_model(bert_config, shape, use_one_hot_embeddings, init_chec
   tf_config = tf.ConfigProto()
   tf_config.gpu_options.allow_growth = True
   output_node_names = ['unstack']
-
+  # Make shape static.
+  shape = [FLAGS.predict_batch_size, FLAGS.max_seq_length]
   with tf.Session(config=tf_config) as tf_sess:
     input_ids = tf.placeholder(tf.int32, shape, 'input_ids')
     input_mask = tf.placeholder(tf.int32, shape, 'input_mask')
@@ -234,6 +235,9 @@ def get_frozen_tftrt_model(bert_config, shape, use_one_hot_embeddings, init_chec
 
     frozen_graph = tf.graph_util.convert_variables_to_constants(tf_sess, 
             tf_sess.graph.as_graph_def(), output_node_names)
+
+    with tf.gfile.GFile("bert_frozen.pb", "wb") as f:
+      f.write(frozen_graph.SerializeToString())
 
     num_nodes = len(frozen_graph.node)
     print('Converting graph using TensorFlow-TensorRT...')
